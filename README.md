@@ -11,7 +11,7 @@ Currently supported validation rules are:
 - Restrict access to specific certificate serial numbers per router
 
 
-## **Important Security Note**
+## ⚠️ **Important Security Note** ⚠️
 This middleware specifies _optional additional_ rules – meaning: if you don't specify a validation rule, it will not be
 performed.
 
