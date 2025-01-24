@@ -17,8 +17,8 @@ services:
       - --entrypoints.websecure.address=:443
       # Add plugin
       - --experimental.abortonpluginfailure=true
-      - --experimental.plugins.mtlsrules=true
-      - --experimental.plugins.mtlsrules.modulename=github.com/KizzyCode/mtlsrules-traefik-golang
+      - --experimental.localplugins.mtlsrules=true
+      - --experimental.localplugins.mtlsrules.modulename=github.com/KizzyCode/mtlsrules-traefik-golang
     ports:
       - 127.0.0.1:443:443
       - 127.0.0.1:8080:8080

@@ -7,8 +7,17 @@ mTLS authentication.
 
 Currently supported validation rules are:
 - Restrict access to specific CA per router
-- Optionally restrict access to specific common names per router
-- Optionally restrict access to specific certificate serial numbers per router
+- Restrict access to specific common names per router
+- Restrict access to specific certificate serial numbers per router
+
+
+## **Important Security Note**
+This middleware specifies _optional additional_ rules – meaning: if you don't specify a validation rule, it will not be
+performed.
+
+This also means that **if you don't specify a root certificate, the certificate chain will not be validated**. To ensure
+your certificate is validated, always either set a `rootCert`, or use either Traefik's `VerifyClientCertIfGiven` or
+`RequireAndVerifyClientCert` rules in the mTLS configuration.
 
 
 ## Example Service Configuration

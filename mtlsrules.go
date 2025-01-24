@@ -52,15 +52,19 @@ func New(ctx context.Context, next http.Handler, config *Config, name string) (h
 	fmt.Printf("Initializing %q with config %+v\n", name, config)
 
 	// Try to get cert from filesystem
-	rootCert, err := os.ReadFile(config.RootCert)
-	if err != nil {
-		fmt.Printf("Cannot read root certificate at %s", config.RootCert)
-		return nil, err
-	}
+	var certPool *x509.CertPool = nil
+	if len(config.RootCert) > 0 {
+		// Load root cert
+		rootCert, err := os.ReadFile(config.RootCert)
+		if err != nil {
+			fmt.Printf("Cannot read root certificate at %s", config.RootCert)
+			return nil, err
+		}
 
-	// Create certificate pool
-	certPool := x509.NewCertPool()
-	certPool.AppendCertsFromPEM(rootCert)
+		// Create certificate pool
+		certPool = x509.NewCertPool()
+		certPool.AppendCertsFromPEM(rootCert)
+	}
 
 	// Init plugin
 	return &MtlsRules{
@@ -89,14 +93,16 @@ func (plugin *MtlsRules) ServeHTTP(response http.ResponseWriter, request *http.R
 
 	// Validate certificate validity
 	peerCert := request.TLS.PeerCertificates[0]
-	_, err := peerCert.Verify(x509.VerifyOptions{
-		Roots:     plugin.certPool,
-		KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
-	})
-	if err != nil {
-		fmt.Printf("Rejecting invalid mTLS certicate from %s (%s)", request.RemoteAddr, err)
-		http.Error(response, plugin.config.StatusText, plugin.config.StatusCode)
-		return
+	if plugin.certPool != nil {
+		_, err := peerCert.Verify(x509.VerifyOptions{
+			Roots:     plugin.certPool,
+			KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
+		})
+		if err != nil {
+			fmt.Printf("Rejecting invalid mTLS certicate from %s (%s)", request.RemoteAddr, err)
+			http.Error(response, plugin.config.StatusText, plugin.config.StatusCode)
+			return
+		}
 	}
 
 	// Validate common name
