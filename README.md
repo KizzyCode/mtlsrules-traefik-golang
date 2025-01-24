@@ -63,7 +63,7 @@ To test that client certificate B is validated but rejected, run:
 curl -vvv --cert-type P12 --cert .docker/TestClientA.pfx --resolve whoami.invalid:443:127.0.0.1 --insecure https://whoami.invalid
 ```
 
-### Test Invalid Client Certificat3e (expected invalid)
+### Test Invalid Client Certificate (expected invalid)
 To test that the invalid client certificate does not pass validation, run:
 ``` sh
 curl -vvv --cert-type P12 --cert .docker/TestInvalidClient.pfx --resolve whoami.invalid:443:127.0.0.1 --insecure https://whoami.invalid
