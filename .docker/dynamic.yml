@@ -1,0 +1,7 @@
+# This has to be a file, sadly
+tls:
+  options:
+    mtls:
+      sniStrict: false
+      clientAuth:
+        clientAuthType: RequestClientCert

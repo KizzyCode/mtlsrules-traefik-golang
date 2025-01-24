@@ -1,0 +1,44 @@
+services:
+  traefik:
+    image: traefik:latest
+    command:
+      # Enable debug output
+      - --log.level=DEBUG
+      - --api.dashboard=false
+      # Disable telemetry
+      - --global.sendAnonymousUsage=false
+      # Docker autoconfig
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      # File-based autoconfig
+      - --providers.file.filename=/etc/traefik/dynamic.yml
+      - --providers.file.watch=true
+      # TLS endpoint
+      - --entrypoints.websecure.address=:443
+      # Add plugin
+      - --experimental.abortonpluginfailure=true
+      - --experimental.plugins.mtlsrules=true
+      - --experimental.plugins.mtlsrules.modulename=github.com/KizzyCode/mtlsrules-traefik-golang
+    ports:
+      - 127.0.0.1:443:443
+      - 127.0.0.1:8080:8080
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./.docker/TestCA.crt:/etc/traefik/TestCA.crt:ro
+      - ./.docker/dynamic.yml:/etc/traefik/dynamic.yml:ro
+      - ./:/plugins-local/src/github.com/KizzyCode/mtlsrules-traefik-golang:ro
+
+  whoami:
+    image: traefik/whoami
+    labels:
+      # Basic traefik config
+      - traefik.enable=true
+      - traefik.http.routers.whoami.rule=Host(`whoami.invalid`)
+      - traefik.http.routers.whoami.tls=true
+      # mTLS Rules
+      - traefik.http.routers.whoami.tls.options=mtls@file
+      - traefik.http.routers.whoami.middlewares=mtls
+      - traefik.http.middlewares.mtls.plugin.mtlsrules.rootCert=/etc/traefik/TestCA.crt
+      - traefik.http.middlewares.mtls.plugin.mtlsrules.commonNames[0]=mTLS Rules Test Client A
+    command:
+      - --name=This is resource is only accessible via mTLS

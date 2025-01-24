@@ -1,0 +1,9 @@
+displayName: mTLS Rules
+type: middleware
+import: github.com/KizzyCode/mtlsrules-traefik-golang
+summary: Middleware to check mTLS client certificates against validity and common name or serial number
+
+testData:
+  rootCert: ""
+  statusCode: 403
+  statusText: Forbidden
