@@ -67,7 +67,7 @@ func (plugin *MtlsRules) ServeHTTP(response http.ResponseWriter, request *http.R
 		return
 	}
 
-	// We explicitly take cert[0] here, because the chain should already have been verified, si we are only interested
+	// We explicitly take cert[0] here, because the chain should already have been verified, so we are only interested
 	//  in the identity of the individual leaf cert
 	peerCert := request.TLS.PeerCertificates[0]
 	fmt.Printf("plugin.config.CommonName: %s", plugin.config.CN)
@@ -97,7 +97,7 @@ func (plugin *MtlsRules) ServeHTTP(response http.ResponseWriter, request *http.R
 
 // El-cheapo-parser to parse a rule of the format: Kind(`rule`)
 func parseRule(rule string) (string, string) {
-	// We trim the string because due to multiline configs
+	// We trim the string due to multiline configs
 	rule = strings.TrimSpace(rule)
 
 	// Split-off kind
