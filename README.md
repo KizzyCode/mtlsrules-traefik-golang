@@ -33,7 +33,7 @@ whoami:
         - traefik.http.routers.whoami.tls=true
         # mTLS Rules
         - traefik.http.routers.whoami.tls.options=mtls@file
-        - traefik.http.routers.whoami.middlewares.mtls-cn
+        - traefik.http.routers.whoami.middlewares=mtls-cn
         - traefik.http.middlewares.mtls-cn.plugin.mtlsrules.cn=Regex(`mTLS Rules Test Client A`)
     command:
         - --name=This is resource is only accessible via mTLS
