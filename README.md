@@ -7,8 +7,9 @@ to restrict access for valid certificates to specific subset common names (CN).
 
 
 ## ⚠️ **HAZMAT - Important Security Note** ⚠️
-The middleware does not verify the mTLS chain. You have to ensure that the certificate has already been validated by
-Traefik using `VerifyClientCertIfGiven` or `RequireAndVerifyClientCert` in the mTLS configuration.
+The middleware does not verify the mTLS certificate chain. You __MUST__ to ensure that the certificate has already been
+validated by Traefik using `VerifyClientCertIfGiven` or `RequireAndVerifyClientCert` in the mTLS configuration, or by
+another middleware upfront.
 
 
 ## Example Service Configuration
@@ -45,20 +46,20 @@ To run some manual tests, fire up the docker container via the provided [`docker
 ### Test Client Certificate A (expected valid)
 To test that client certificate A is allowed, run:
 ``` sh
-curl -vvv --cert-type P12 --cert .example/TestClientA.pfx \
+curl -vvv --cert-type P12 --cert .assets/TestClientA.pfx \
   --resolve whoami.invalid:443:127.0.0.1 --insecure https://whoami.invalid
 ```
 
 ### Test Client Certificate A (expected rejected)
 To test that client certificate B is validated but rejected, run:
 ``` sh
-curl -vvv --cert-type P12 --cert .example/TestClientA.pfx \
+curl -vvv --cert-type P12 --cert .assets/TestClientA.pfx \
   --resolve whoami.invalid:443:127.0.0.1 --insecure https://whoami.invalid
 ```
 
 ### Test Invalid Client Certificate (expected invalid)
 To test that the invalid client certificate does not pass validation, run:
 ``` sh
-curl -vvv --cert-type P12 --cert .example/TestInvalidClient.pfx \
+curl -vvv --cert-type P12 --cert .assets/TestInvalidClient.pfx \
   --resolve whoami.invalid:443:127.0.0.1 --insecure https://whoami.invalid
 ```

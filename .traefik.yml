@@ -1,8 +1,10 @@
 displayName: mTLS Rules
 type: middleware
 import: github.com/KizzyCode/mtlsrules-traefik-golang
-summary: Middleware to complement mTLS authentication by allowing you to restrict access to a specific subset common names (CN)
+iconPath: .assets/icon.png
+summary: Complements mTLS authentication by allowing you to restrict access to a specific subset of common names (CN)
 
 testData:
   statusCode: 403
-  statusText: mTLS Access Forbidden
+  statusText: Forbidden (mTLS)
+  cn: Regex(`mTLS Rules Test Client A`)

@@ -33,7 +33,7 @@ type MtlsRules struct {
 func CreateConfig() *Config {
 	return &Config{
 		StatusCode: 403,
-		StatusText: "mTLS Access Forbidden",
+		StatusText: "Forbidden (mTLS)",
 		CN:         "",
 	}
 }
@@ -70,10 +70,7 @@ func (plugin *MtlsRules) ServeHTTP(response http.ResponseWriter, request *http.R
 	// We explicitly take cert[0] here, because the chain should already have been verified, so we are only interested
 	//  in the identity of the individual leaf cert
 	peerCert := request.TLS.PeerCertificates[0]
-	fmt.Printf("plugin.config.CommonName: %s", plugin.config.CN)
 	cnRuleKind, cnRule := parseRule(plugin.config.CN)
-	fmt.Printf("plugin.config.CommonName: %s => cnRuleKind: %s, cnRule %s",
-		plugin.config.CN, cnRuleKind, cnRule)
 
 	// Validate regex rule if given
 	if cnRuleKind == "Regex" {
