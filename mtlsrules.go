@@ -67,8 +67,8 @@ func (plugin *MtlsRules) ServeHTTP(response http.ResponseWriter, request *http.R
 		return
 	}
 
-	// We explicitly take cert[0] here, because the chain should already have been verified, so we are only interested
-	//  in the identity of the individual leaf cert
+	// We explicitly take cert[0] here, as the chain should already have been verified, so we are only interested in the
+	// 	identity of the individual leaf cert
 	peerCert := request.TLS.PeerCertificates[0]
 	cnRuleKind, cnRule := parseRule(plugin.config.CN)
 
