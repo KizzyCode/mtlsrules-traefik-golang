@@ -24,9 +24,12 @@ services:
       - 127.0.0.1:8080:8080
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
-      - ./.docker/TestCA.crt:/etc/traefik/TestCA.crt:ro
-      - ./.docker/dynamic.yml:/etc/traefik/dynamic.yml:ro
       - ./:/plugins-local/src/github.com/KizzyCode/mtlsrules-traefik-golang:ro
+    configs:
+      - source: traefik
+        target: /etc/traefik/dynamic.yml
+      - source: rootca
+        target: /etc/traefik/TestCA.crt
 
   whoami:
     image: traefik/whoami
@@ -37,8 +40,34 @@ services:
       - traefik.http.routers.whoami.tls=true
       # mTLS Rules
       - traefik.http.routers.whoami.tls.options=mtls@file
-      - traefik.http.routers.whoami.middlewares=mtls
-      - traefik.http.middlewares.mtls.plugin.mtlsrules.rootCert=/etc/traefik/TestCA.crt
-      - traefik.http.middlewares.mtls.plugin.mtlsrules.commonNames[0]=mTLS Rules Test Client A
+      - traefik.http.routers.whoami.middlewares=mtls-cn
+      - traefik.http.middlewares.mtls-cn.plugin.mtlsrules.cn=Regex(`mTLS Rules Test Client A`)
     command:
       - --name=This is resource is only accessible via mTLS
+
+configs:
+  traefik:
+    content: |
+      tls:
+        options:
+          mtls:
+            sniStrict: false
+            clientAuth:
+              clientAuthType: RequireAndVerifyClientCert
+              caFiles:
+                - /etc/traefik/TestCA.crt
+  rootca:
+    content: |
+      -----BEGIN CERTIFICATE-----
+      MIIB4DCCAWWgAwIBAgIIAYy/uMmtCSQwCgYIKoZIzj0EAwMwHTEbMBkGA1UEAxMS
+      bVRMUyBSdWxlcyBUZXN0IENBMB4XDTI1MDEwMTAwMDAwMFoXDTM0MTIzMTIzNTk1
+      OVowHTEbMBkGA1UEAxMSbVRMUyBSdWxlcyBUZXN0IENBMHYwEAYHKoZIzj0CAQYF
+      K4EEACIDYgAEjsowJixF/JTL8gJ7Ug0qXYO2Ompbzgz9m7tt4cR9SbC5+BSEplZT
+      pzvcQ7MIZtIGrUbVNZHuEiQrIugkSAdVc6tRP/ZafFNvH17gO4EXa836qmLJgG4h
+      9QyWgIzQs3nGo3IwcDAPBgNVHRMBAf8EBTADAQH/MB0GA1UdDgQWBBSpmSthgOJ4
+      tLPILylKTT1zIslBjDALBgNVHQ8EBAMCAQYwEQYJYIZIAYb4QgEBBAQDAgAHMB4G
+      CWCGSAGG+EIBDQQRFg94Y2EgY2VydGlmaWNhdGUwCgYIKoZIzj0EAwMDaQAwZgIx
+      AKA9e6WicI93+umGb5wY5sGzq5Mx3wNPt4INbbK5w0ef+dDnQeB7ZGLFkie1Sx6I
+      2AIxAPwvgl9M12o+T8010OdNS0lueU5Mbv+Uow9v7EVecLaOSGs2o9KFpUkmR7DA
+      2bS0yA==
+      -----END CERTIFICATE-----

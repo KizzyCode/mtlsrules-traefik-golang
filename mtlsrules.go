@@ -2,25 +2,21 @@ package mtlsrules_traefik_golang
 
 import (
 	"context"
-	"crypto/x509"
 	"fmt"
 	"net/http"
-	"os"
-	"slices"
+	"regexp"
+	"strings"
 )
 
 // Plugin configuration
 type Config struct {
-	// The root CA certificate to validate against
-	RootCert string `yaml:"rootCert" json:"rootCert"`
 	// Status code to return in case the validation fails
 	StatusCode int `yaml:"statusCode" json:"statusCode"`
 	// Status text to return in case the validation fails
 	StatusText string `yaml:"statusText" json:"statusText"`
-	// Allowed common names
-	CommonNames []string `yaml:"commonNames" json:"commonNames"`
-	// Allowed serial numbers
-	SerialNumbers []string `yaml:"serialNumbers" json:"serialNumbers"`
+	// Common name rules
+	// Note: Keep the config name short to avoid overly long lines
+	CN string `yaml:"cn" json:"cn"`
 }
 
 // The plugin object
@@ -31,18 +27,14 @@ type MtlsRules struct {
 	next http.Handler
 	// The plugin name
 	name string
-	// Certificate pool cache
-	certPool *x509.CertPool
 }
 
 // Creates a default config if the config is empty
 func CreateConfig() *Config {
 	return &Config{
-		RootCert:      "",
-		StatusCode:    403,
-		StatusText:    "Forbidden",
-		CommonNames:   nil,
-		SerialNumbers: nil,
+		StatusCode: 403,
+		StatusText: "mTLS Access Forbidden",
+		CN:         "",
 	}
 }
 
@@ -51,27 +43,11 @@ func New(ctx context.Context, next http.Handler, config *Config, name string) (h
 	// Print some debugging info
 	fmt.Printf("Initializing %q with config %+v\n", name, config)
 
-	// Try to get cert from filesystem
-	var certPool *x509.CertPool = nil
-	if len(config.RootCert) > 0 {
-		// Load root cert
-		rootCert, err := os.ReadFile(config.RootCert)
-		if err != nil {
-			fmt.Printf("Cannot read root certificate at %s", config.RootCert)
-			return nil, err
-		}
-
-		// Create certificate pool
-		certPool = x509.NewCertPool()
-		certPool.AppendCertsFromPEM(rootCert)
-	}
-
 	// Init plugin
 	return &MtlsRules{
-		config:   config,
-		next:     next,
-		name:     name,
-		certPool: certPool,
+		config: config,
+		next:   next,
+		name:   name,
 	}, nil
 }
 
@@ -91,40 +67,51 @@ func (plugin *MtlsRules) ServeHTTP(response http.ResponseWriter, request *http.R
 		return
 	}
 
-	// Validate certificate validity
+	// We explicitly take cert[0] here, because the chain should already have been verified, si we are only interested
+	//  in the identity of the individual leaf cert
 	peerCert := request.TLS.PeerCertificates[0]
-	if plugin.certPool != nil {
-		_, err := peerCert.Verify(x509.VerifyOptions{
-			Roots:     plugin.certPool,
-			KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
-		})
+	fmt.Printf("plugin.config.CommonName: %s", plugin.config.CN)
+	cnRuleKind, cnRule := parseRule(plugin.config.CN)
+	fmt.Printf("plugin.config.CommonName: %s => cnRuleKind: %s, cnRule %s",
+		plugin.config.CN, cnRuleKind, cnRule)
+
+	// Validate regex rule if given
+	if cnRuleKind == "Regex" {
+		commonNameOk, err := regexp.MatchString(cnRule, peerCert.Subject.CommonName)
 		if err != nil {
-			fmt.Printf("Rejecting invalid mTLS certicate from %s (%s)", request.RemoteAddr, err)
+			fmt.Printf("Failed to match CN regex for %s (%s)", request.RemoteAddr, err)
 			http.Error(response, plugin.config.StatusText, plugin.config.StatusCode)
+			return
+		}
+		if commonNameOk {
+			plugin.next.ServeHTTP(response, request)
 			return
 		}
 	}
 
-	// Validate common name
-	if plugin.config.CommonNames != nil {
-		commonNameOk := slices.Contains(plugin.config.CommonNames, peerCert.Subject.CommonName)
-		if !commonNameOk {
-			fmt.Printf("Rejecting invalid mTLS certificate from %s (unknown common name: \"%s\")", request.RemoteAddr, peerCert.Subject.CommonName)
-			http.Error(response, plugin.config.StatusText, plugin.config.StatusCode)
-			return
-		}
+	// Validation chain did not succeed
+	fmt.Printf("Rejecting invalid mTLS certificate from %s (CN: \"%s\")",
+		request.RemoteAddr, peerCert.Subject.CommonName)
+	http.Error(response, plugin.config.StatusText, plugin.config.StatusCode)
+}
+
+// El-cheapo-parser to parse a rule of the format: Kind(`rule`)
+func parseRule(rule string) (string, string) {
+	// We trim the string because due to multiline configs
+	rule = strings.TrimSpace(rule)
+
+	// Split-off kind
+	kind, remainder, found := strings.Cut(rule, "(`")
+	if !found {
+		return "", ""
 	}
 
-	// Validate serial numbers
-	if plugin.config.SerialNumbers != nil {
-		serialNumberOk := slices.Contains(plugin.config.SerialNumbers, peerCert.Subject.SerialNumber)
-		if !serialNumberOk {
-			fmt.Printf("Rejecting invalid mTLS certificate from %s (unknown serial number: \"%s\")", request.RemoteAddr, peerCert.Subject.SerialNumber)
-			http.Error(response, plugin.config.StatusText, plugin.config.StatusCode)
-			return
-		}
+	// Split-off value
+	value, found := strings.CutSuffix(remainder, "`)")
+	if !found {
+		return "", ""
 	}
 
-	// Request seems to be valid
-	plugin.next.ServeHTTP(response, request)
+	// Return kind and value
+	return kind, value
 }
