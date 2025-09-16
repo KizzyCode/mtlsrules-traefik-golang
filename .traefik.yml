@@ -1,7 +1,7 @@
 displayName: mTLS Rules
 type: middleware
 import: github.com/KizzyCode/mtlsrules-traefik-golang
-iconPath: .assets/icon.png
+iconPath: .assets/icon.jpg
 summary: Complements mTLS authentication by allowing you to restrict access to a specific subset of common names (CN)
 
 testData:
