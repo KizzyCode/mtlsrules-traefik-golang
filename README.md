@@ -20,7 +20,7 @@ dynamic configuration. If mTLS is enabled, you can configure your `whoami` route
 - Setup a common name rule to match against:
   ```
   # Regex for a single name
-  traefik.http.middlewares.mtls-common-names.plugin.mtlsrules.cn=Regex(`mTLS Rules Test Client A`)
+  traefik.http.middlewares.mtls-common-names.plugin.mtlsrules.cn=Regex(`^mTLS Rules Test Client A$`)
   ```
 
 ```yaml
@@ -34,7 +34,7 @@ whoami:
         # mTLS Rules
         - traefik.http.routers.whoami.tls.options=mtls@file
         - traefik.http.routers.whoami.middlewares=mtls-cn
-        - traefik.http.middlewares.mtls-cn.plugin.mtlsrules.cn=Regex(`mTLS Rules Test Client A`)
+        - traefik.http.middlewares.mtls-cn.plugin.mtlsrules.cn=Regex(`^mTLS Rules Test Client A$`)
     command:
         - --name=This is resource is only accessible via mTLS
 ```
